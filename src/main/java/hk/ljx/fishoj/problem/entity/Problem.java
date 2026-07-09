@@ -1,0 +1,44 @@
+package hk.ljx.fishoj.problem.entity;
+
+import com.baomidou.mybatisplus.annotation.*;
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Data
+@TableName("problem")
+public class Problem {
+
+    @TableId(type = IdType.AUTO)
+    private Long id;
+
+    private String title;
+
+    private String description;
+
+    private String inputDesc;
+
+    private String outputDesc;
+
+    private String sampleInput;
+
+    private String sampleOutput;
+
+    private String difficulty;
+
+    private Integer timeLimitMs;
+
+    private Integer memoryLimitKb;
+
+    private Long createUserId;
+
+    /** 逻辑删除: 1-正常, 0-已删除 */
+    @TableLogic(value = "1", delval = "0")
+    private Integer status;
+
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
+
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
+}
