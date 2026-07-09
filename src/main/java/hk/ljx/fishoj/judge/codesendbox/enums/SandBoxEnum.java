@@ -16,4 +16,13 @@ public enum SandBoxEnum {
     SandBoxEnum(String type) {
         this.type = type;
     }
+
+    public static SandBoxEnum getEnum(String type) {
+        for (SandBoxEnum sandBoxEnum : SandBoxEnum.values()) {
+            if (sandBoxEnum.type.equals(type)) {
+                return sandBoxEnum;
+            }
+        }
+        return null;
+    }
 }

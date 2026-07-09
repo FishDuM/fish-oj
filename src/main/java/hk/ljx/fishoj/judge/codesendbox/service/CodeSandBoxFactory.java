@@ -15,10 +15,9 @@ public class CodeSandBoxFactory {
         switch (sandBoxEnum) {
             case REMOTE:
                 return new RemoteCodeSandBox();
-            case EXAMPLE:
-                return new ExampleCodeSandBox();
             case THIRD_PARTY:
                 return new ThirdPartyCodeSandBox();
+            case EXAMPLE:
             default:
                 return new ExampleCodeSandBox();
         }

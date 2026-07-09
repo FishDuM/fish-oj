@@ -33,6 +33,7 @@ user     用户 + 做题统计
 problem  题目 + 测试用例
 tag      标签
 judge    提交 + 判题明细
+└─ codesendbox  代码沙箱接口 + 三种实现
 ```
 
 ## API
@@ -83,7 +84,17 @@ judge    提交 + 判题明细
 
 ## 判题
 
-`SubmitServiceImpl.submit` 只做"记录 pending 提交"，真实判题沙箱**待接入**。接入后需要：
+`judge.codesendbox` 定义 `CodeSandBox` 接口，三种实现由 `CodeSandBoxFactory` 按类型返回：
+
+| 类型 | key | 用途 |
+|---|---|---|
+| 示例 | `example` | 本地占位，打印日志后返回空响应 |
+| 远程 | `remote` | 调用自建判题服务（待实现） |
+| 第三方 | `thirdParty` | 调用第三方判题平台（待实现） |
+
+切换方式：`application.yaml` 中改 `codesandbox.type`，对应枚举值见 `SandBoxEnum`。
+
+`SubmitServiceImpl.submit` 只做"记录 pending 提交"，调用方需自行触发判题并：
 1. 异步更新 submit 状态/得分/时间/内存
 2. 写入 `judge_case` 明细
 3. 调用 `userProblemService.recordSubmit` 累计统计

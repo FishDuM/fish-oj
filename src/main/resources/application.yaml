@@ -1,3 +1,6 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: fish-oj
@@ -30,5 +33,5 @@ mybatis-plus:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-server:
-  port: 8080
+codesandbox:
+  type: example
