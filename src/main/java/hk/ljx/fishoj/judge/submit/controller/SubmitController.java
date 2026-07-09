@@ -49,7 +49,7 @@ public class SubmitController {
      */
     @GetMapping("/list")
     @SaCheckLogin
-    public Result<IPage<SubmitVO>> list(SubmitQuery query) {
+    public Result<IPage<SubmitVO>> list(@Valid SubmitQuery query) {
         return Result.success(submitService.pageMy(query));
     }
 }

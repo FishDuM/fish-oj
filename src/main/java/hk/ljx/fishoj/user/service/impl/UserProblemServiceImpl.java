@@ -39,12 +39,12 @@ public class UserProblemServiceImpl
         String currentStatus = existing == null ? null : existing.getStatus();
         String nextStatus = determineStatus(currentStatus, status);
 
-        // CAS 累加: 走 SQL 自增 + GREATEST, 避免读改写丢失更新
+        // CAS 累加: submitCount/acCount 用 setIncrBy, best_score 用 setSql + 安全格式
         LambdaUpdateWrapper<UserProblem> cas = new LambdaUpdateWrapper<UserProblem>()
                 .eq(UserProblem::getUserId, userId)
                 .eq(UserProblem::getProblemId, problemId)
-                .setSql("submit_count = submit_count + 1")
-                .setSql("ac_count = ac_count + " + (isAc ? 1 : 0))
+                .setIncrBy(UserProblem::getSubmitCount, 1)
+                .setIncrBy(UserProblem::getAcCount, isAc ? 1 : 0)
                 .setSql("best_score = GREATEST(best_score, " + score + ")")
                 .set(true, UserProblem::getStatus, nextStatus, null)
                 .set(true, UserProblem::getLastSubmitTime, LocalDateTime.now(), null);

@@ -7,10 +7,13 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
- * 管理端题目创建/更新入参 (不含 createUserId/status/id, 由后端强制)
+ * 管理端题目创建/更新入参 (不含 createUserId/status; id 在 body 中, 创建时省略)
  */
 @Data
 public class ProblemDTO {
+
+    /** 更新时必填, 创建时省略 */
+    private Long id;
 
     @NotBlank(message = "标题不能为空")
     @Size(max = 200, message = "标题最长200")

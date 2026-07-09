@@ -80,13 +80,23 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
     }
 
     /**
-     * 管理员更新标签 (id 由路径参数强制注入, 防止 body 里的 id 字段越权改其他记录)
-     * @param id 标签 id (来自路径参数)
-     * @param tag 待更新字段 (只动 name)
+     * 管理员更新标签 (id 在 body 中)
+     * @param tag 待更新字段 (id/name)
      */
     @Override
-    public void updateByAdmin(Long id, Tag tag) {
-        tag.setId(id);
+    public void updateByAdmin(Tag tag) {
         updateById(tag);
+    }
+
+    /**
+     * 管理员创建或更新标签 (id 为空则新增, 有值则更新)
+     */
+    @Override
+    public void saveOrUpdateByAdmin(Tag tag) {
+        if (tag.getId() == null) {
+            save(tag);
+        } else {
+            updateByAdmin(tag);
+        }
     }
 }

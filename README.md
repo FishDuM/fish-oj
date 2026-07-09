@@ -75,10 +75,10 @@ judge    提交 + 判题结果 + 沙箱
 
 | Prefix | 说明 |
 |---|---|
-| `/api/admin/user` | 用户管理（创建 / 更新资料 / 修改角色 `PUT /{id}/role` / 删除） |
-| `/api/admin/problem` | 题目管理 |
-| `/api/admin/test-case` | 测试用例管理 |
-| `/api/admin/tag` | 标签 + 题目绑定 |
+| `/api/admin/user` | 用户管理（`POST /create` 创建 / `POST /update` 更新资料 / `POST /update-role` 修改角色 / `DELETE` 删除） |
+| `/api/admin/problem` | 题目管理（`POST` 创建或更新，id 在 body 中决定增改） |
+| `/api/admin/test-case` | 测试用例管理（`POST` 创建或更新） |
+| `/api/admin/tag` | 标签（`POST` 创建或更新 / `POST /bind` 绑定题目） |
 
 ## 约定
 

@@ -13,6 +13,9 @@ public interface TagService extends IService<Tag> {
 
     List<Tag> listTagsByIds(List<Long> tagIds);
 
-    /** 管理员更新标签 (id 由路径参数注入, 不接受 body 里的 id 覆盖) */
-    void updateByAdmin(Long id, Tag tag);
+    /** 管理员更新标签 (id 在 body 中, 不使用路径参数) */
+    void updateByAdmin(Tag tag);
+
+    /** 管理员创建或更新标签 (id 为空则新增, 有值则更新) */
+    void saveOrUpdateByAdmin(Tag tag);
 }

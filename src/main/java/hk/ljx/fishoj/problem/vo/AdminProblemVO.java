@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProblemVO {
+public class AdminProblemVO {
 
     private Long id;
 
@@ -34,5 +34,12 @@ public class ProblemVO {
 
     private Integer memoryLimitKb;
 
+    private Long createUserId;
+
+    /** 逻辑删除: 1-正常, 0-已删除 */
+    private Integer status;
+
     private LocalDateTime createTime;
+
+    private LocalDateTime updateTime;
 }

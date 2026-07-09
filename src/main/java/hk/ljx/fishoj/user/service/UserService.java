@@ -7,6 +7,7 @@ import hk.ljx.fishoj.user.dto.AdminUpdateUserRequest;
 import hk.ljx.fishoj.user.dto.AdminUserQuery;
 import hk.ljx.fishoj.user.dto.LoginRequest;
 import hk.ljx.fishoj.user.dto.RegisterRequest;
+import hk.ljx.fishoj.user.dto.UserRoleRequest;
 import hk.ljx.fishoj.user.entity.User;
 import hk.ljx.fishoj.user.vo.UserVO;
 
@@ -19,7 +20,8 @@ public interface UserService extends IService<User> {
     /** 退出登录 (清掉当前 session + token, 由 service 从上下文读取登录态) */
     void logout();
 
-    User getCurrentUser();
+    /** 获取当前登录用户信息 (从 StpUtil 读 id, 返回 VO 脱敏 password) */
+    UserVO getCurrentUserVO();
 
     IPage<UserVO> pageAdmin(AdminUserQuery query);
 
@@ -27,9 +29,9 @@ public interface UserService extends IService<User> {
 
     User createByAdmin(AdminCreateUserRequest request);
 
-    void updateByAdmin(Long id, AdminUpdateUserRequest request);
+    void updateByAdmin(AdminUpdateUserRequest request);
 
-    void updateRole(Long id, String role);
+    void updateRole(UserRoleRequest request);
 
     /** 按 id 删除用户 (由 service 校验不能删除自己) */
     void deleteById(Long id);

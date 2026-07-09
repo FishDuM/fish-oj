@@ -1,8 +1,8 @@
 package hk.ljx.fishoj.tag.controller;
 
 import hk.ljx.fishoj.common.response.Result;
-import hk.ljx.fishoj.tag.entity.Tag;
 import hk.ljx.fishoj.tag.service.TagService;
+import hk.ljx.fishoj.tag.vo.TagVO;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,8 +20,13 @@ public class TagController {
      * @return 标签列表
      */
     @GetMapping("/list")
-    public Result<List<Tag>> list() {
+    public Result<List<TagVO>> list() {
         // 标签数据少, 全量返即可
-        return Result.success(tagService.list());
+        return Result.success(tagService.list().stream().map(tag -> {
+            TagVO vo = new TagVO();
+            vo.setId(tag.getId());
+            vo.setName(tag.getName());
+            return vo;
+        }).toList());
     }
 }

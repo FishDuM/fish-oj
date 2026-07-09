@@ -15,6 +15,7 @@ import hk.ljx.fishoj.problem.dto.ProblemQuery;
 import hk.ljx.fishoj.problem.entity.Problem;
 import hk.ljx.fishoj.problem.mapper.ProblemMapper;
 import hk.ljx.fishoj.problem.service.ProblemService;
+import hk.ljx.fishoj.problem.vo.AdminProblemVO;
 import hk.ljx.fishoj.problem.vo.ProblemDetailVO;
 import hk.ljx.fishoj.problem.vo.ProblemListVO;
 import hk.ljx.fishoj.problem.vo.ProblemVO;
@@ -42,13 +43,21 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     /**
      * 管理端题目分页 (看全部状态, 含草稿/隐藏)
      * @param query 分页参数
-     * @return 题目实体分页结果
+     * @return 题目 VO 分页结果
      */
     @Override
-    public IPage<Problem> pageAdmin(AdminProblemQuery query) {
+    public IPage<AdminProblemVO> pageAdmin(AdminProblemQuery query) {
         // 管理端能看草稿/隐藏题, 不过滤 status
-        return page(new Page<>(query.getPage(), query.getSize()),
+        Page<Problem> p = page(new Page<>(query.getPage(), query.getSize()),
                 new LambdaQueryWrapper<Problem>().orderByDesc(Problem::getCreateTime));
+        Page<AdminProblemVO> voPage = new Page<>(p.getCurrent(), p.getSize(), p.getTotal());
+        List<AdminProblemVO> voList = p.getRecords().stream().map(problem -> {
+            AdminProblemVO vo = new AdminProblemVO();
+            BeanUtil.copyProperties(problem, vo);
+            return vo;
+        }).toList();
+        voPage.setRecords(voList);
+        return voPage;
     }
 
     /**
@@ -92,13 +101,15 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     }
 
     /**
-     * 获取题目详情 (含 description + 关联标签)
+     * 获取题目详情 (含 description + 关联标签; 仅查已发布题目)
      * @param id 题目 id
      * @return 题目详情 VO
      */
     @Override
     public ProblemDetailVO getDetail(Long id) {
-        Problem problem = getById(id);
+        Problem problem = getOne(new LambdaQueryWrapper<Problem>()
+                .eq(Problem::getId, id)
+                .eq(Problem::getStatus, 1));
         if (problem == null) {
             throw new BusinessException(ErrorCode.PROBLEM_NOT_FOUND);
         }
@@ -115,6 +126,20 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         ProblemDetailVO vo = new ProblemDetailVO();
         vo.setProblem(problemVO);
         vo.setTags(tagVOs);
+        return vo;
+    }
+
+    /**
+     * 按 id 获取管理端题目 VO
+     */
+    @Override
+    public AdminProblemVO getVoById(Long id) {
+        Problem problem = getById(id);
+        if (problem == null) {
+            throw new BusinessException(ErrorCode.PROBLEM_NOT_FOUND);
+        }
+        AdminProblemVO vo = new AdminProblemVO();
+        BeanUtil.copyProperties(problem, vo);
         return vo;
     }
 
@@ -138,23 +163,29 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
 
     /**
      * 管理员更新题目 (仅动 title/description/难度/时间/内存, 不碰 createUserId/status)
-     * @param id 题目 id
-     * @param dto 题目入参
+     * 先查后更新以便乐观锁 @Version 生效, 并发安全
+     * @param dto 题目入参 (含 id)
      */
     @Override
-    public void updateByAdmin(Long id, ProblemDTO dto) {
-        LambdaUpdateWrapper<Problem> wrapper = new LambdaUpdateWrapper<Problem>()
-                .eq(Problem::getId, id)
-                .set(Problem::getTitle, dto.getTitle())
-                .set(Problem::getDescription, dto.getDescription())
-                .set(Problem::getInputDesc, dto.getInputDesc())
-                .set(Problem::getOutputDesc, dto.getOutputDesc())
-                .set(Problem::getSampleInput, dto.getSampleInput())
-                .set(Problem::getSampleOutput, dto.getSampleOutput())
-                .set(Problem::getDifficulty, dto.getDifficulty())
-                .set(Problem::getTimeLimitMs, dto.getTimeLimitMs())
-                .set(Problem::getMemoryLimitKb, dto.getMemoryLimitKb());
-        update(wrapper);
+    public void updateByAdmin(ProblemDTO dto) {
+        Problem problem = getById(dto.getId());
+        if (problem == null) {
+            throw new BusinessException(ErrorCode.PROBLEM_NOT_FOUND);
+        }
+        BeanUtil.copyProperties(dto, problem);
+        updateById(problem);
+    }
+
+    /**
+     * 管理员创建或更新题目 (id 为空则创建, 有值则更新)
+     */
+    @Override
+    public void saveOrUpdateByAdmin(ProblemDTO dto) {
+        if (dto.getId() == null) {
+            createByAdmin(dto);
+        } else {
+            updateByAdmin(dto);
+        }
     }
 
     /**

@@ -1,11 +1,9 @@
 package hk.ljx.fishoj.user.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import cn.hutool.core.bean.BeanUtil;
 import hk.ljx.fishoj.common.response.Result;
 import hk.ljx.fishoj.user.dto.LoginRequest;
 import hk.ljx.fishoj.user.dto.RegisterRequest;
-import hk.ljx.fishoj.user.entity.User;
 import hk.ljx.fishoj.user.service.UserService;
 import hk.ljx.fishoj.user.vo.UserVO;
 import jakarta.annotation.Resource;
@@ -36,7 +34,6 @@ public class UserController {
      */
     @PostMapping("/login")
     public Result<String> login(@Valid @RequestBody LoginRequest request) {
-        // 登录成功直接返回 token, 前端存到 localStorage
         return Result.success(userService.login(request));
     }
 
@@ -57,10 +54,6 @@ public class UserController {
     @GetMapping("/me")
     @SaCheckLogin
     public Result<UserVO> me() {
-        // 用 VO 而不是直接返 Entity, 防止 password 字段漏出去
-        User user = userService.getCurrentUser();
-        UserVO vo = new UserVO();
-        BeanUtil.copyProperties(user, vo);
-        return Result.success(vo);
+        return Result.success(userService.getCurrentUserVO());
     }
 }

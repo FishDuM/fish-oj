@@ -5,6 +5,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -17,6 +18,7 @@ import hk.ljx.fishoj.user.dto.AdminUpdateUserRequest;
 import hk.ljx.fishoj.user.dto.AdminUserQuery;
 import hk.ljx.fishoj.user.dto.LoginRequest;
 import hk.ljx.fishoj.user.dto.RegisterRequest;
+import hk.ljx.fishoj.user.dto.UserRoleRequest;
 import hk.ljx.fishoj.user.entity.User;
 import hk.ljx.fishoj.user.mapper.UserMapper;
 import hk.ljx.fishoj.user.service.UserService;
@@ -81,10 +83,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     /**
-     * 获取当前登录用户实体 (用户 id 从 StpUtil 读)
-     * @return 用户实体
+     * 获取当前登录用户信息 (返回 VO 脱敏 password)
      */
     @Override
+    public UserVO getCurrentUserVO() {
+        User user = getById(StpUtil.getLoginIdAsLong());
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        UserVO vo = new UserVO();
+        BeanUtil.copyProperties(user, vo);
+        return vo;
+    }
+
+    /**
+     * 获取当前登录用户实体 (仅限 service 内部调用, 对外暴露用 getCurrentUserVO)
+     * @return 用户实体
+     */
     public User getCurrentUser() {
         User user = getById(StpUtil.getLoginIdAsLong());
         if (user == null) {
@@ -155,40 +170,38 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     /**
      * 管理员更新用户 (仅动 nickname/email/password, 不碰 username/role/createTime/id)
      * 密码非空才重置, 空字符串视为不动密码
-     * @param id 用户 id
-     * @param request 更新请求
+     * @param request 更新请求 (含 id)
      */
     @Override
-    public void updateByAdmin(Long id, AdminUpdateUserRequest request) {
-        UpdateWrapper<User> wrapper = new UpdateWrapper<>();
-        wrapper.eq("id", id);
+    public void updateByAdmin(AdminUpdateUserRequest request) {
+        LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<User>()
+                .eq(User::getId, request.getId());
         if (StrUtil.isNotBlank(request.getNickname())) {
-            wrapper.set("nickname", request.getNickname());
+            wrapper.set(User::getNickname, request.getNickname());
         }
         // email 始终更新 (允许清空为 null)
-        wrapper.set("email", request.getEmail());
+        wrapper.set(User::getEmail, request.getEmail());
         // 密码非空才重置, 空字符串视为不动密码
         if (StrUtil.isNotBlank(request.getPassword())) {
-            wrapper.set("password", BCrypt.hashpw(request.getPassword()));
+            wrapper.set(User::getPassword, BCrypt.hashpw(request.getPassword()));
         }
         update(wrapper);
     }
 
     /**
      * 管理员修改用户角色 (改动后强制该用户下线, 下次请求从库刷新角色)
-     * @param id 用户 id
-     * @param role 新角色, 仅接受 RoleEnum 中定义的值
+     * @param request 角色变更请求 (含 id + role), role 仅接受 RoleEnum 中定义的值
      */
     @Override
-    public void updateRole(Long id, String role) {
-        if (RoleEnum.getEnum(role) == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "非法角色: " + role);
+    public void updateRole(UserRoleRequest request) {
+        if (RoleEnum.getEnum(request.getRole()) == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "非法角色: " + request.getRole());
         }
         UpdateWrapper<User> wrapper = new UpdateWrapper<>();
-        wrapper.eq("id", id).set("role", role);
+        wrapper.eq("id", request.getId()).set("role", request.getRole());
         update(wrapper);
         // 让该用户会话失效, 避免 session 里的旧角色一直有效
-        StpUtil.logout(id);
+        StpUtil.logout(request.getId());
     }
 
     /**

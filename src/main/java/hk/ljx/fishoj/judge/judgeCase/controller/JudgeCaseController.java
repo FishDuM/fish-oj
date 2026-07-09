@@ -1,7 +1,6 @@
 package hk.ljx.fishoj.judge.judgeCase.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import cn.hutool.core.bean.BeanUtil;
 import hk.ljx.fishoj.common.response.Result;
 import hk.ljx.fishoj.judge.judgeCase.service.JudgeCaseService;
 import hk.ljx.fishoj.judge.judgeCase.vo.JudgeCaseVO;
@@ -25,15 +24,11 @@ public class JudgeCaseController {
     private JudgeCaseService judgeCaseService;
 
     /**
-     * 获取提交的全部判题用例明细 (走 service 权限校验)
+     * 获取提交的全部判题用例明细 (走 service 权限校验 + entity→VO 转换)
      */
     @GetMapping("/{id}/cases")
     @SaCheckLogin
     public Result<List<JudgeCaseVO>> getCases(@PathVariable Long id) {
-        return Result.success(judgeCaseService.listCases(id).stream().map(jc -> {
-            JudgeCaseVO vo = new JudgeCaseVO();
-            BeanUtil.copyProperties(jc, vo);
-            return vo;
-        }).toList());
+        return Result.success(judgeCaseService.listCases(id));
     }
 }

@@ -6,6 +6,7 @@ import hk.ljx.fishoj.problem.service.ProblemService;
 import hk.ljx.fishoj.problem.vo.ProblemDetailVO;
 import hk.ljx.fishoj.problem.vo.ProblemListVO;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,7 +27,7 @@ public class ProblemController {
      * @return 题目列表 VO 分页结果 (不含 description 长文本)
      */
     @GetMapping("/list")
-    public Result<IPage<ProblemListVO>> list(ProblemQuery query) {
+    public Result<IPage<ProblemListVO>> list(@Valid ProblemQuery query) {
         return Result.success(problemService.pageList(query));
     }
 
