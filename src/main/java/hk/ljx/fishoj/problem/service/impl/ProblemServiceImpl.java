@@ -59,6 +59,9 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
             wrapper.inSql(Problem::getId,
                     "SELECT problem_id FROM problem_tag WHERE tag_id = " + query.getTagId());
         }
+        if (query.getDifficulty() != null && !query.getDifficulty().isBlank()) {
+            wrapper.eq(Problem::getDifficulty, query.getDifficulty());
+        }
         Page<Problem> p = page(new Page<>(query.getPage(), query.getSize()), wrapper);
         Page<ProblemListVO> voPage = new Page<>(p.getCurrent(), p.getSize(), p.getTotal());
         List<ProblemListVO> voList = p.getRecords().stream().map(problem -> {

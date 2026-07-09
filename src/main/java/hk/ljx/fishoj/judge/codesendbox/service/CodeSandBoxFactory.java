@@ -12,14 +12,10 @@ public class CodeSandBoxFactory {
 
     public static CodeSandBox createCodeSandBox(SandBoxEnum sandBoxEnum) {
 
-        switch (sandBoxEnum) {
-            case REMOTE:
-                return new RemoteCodeSandBox();
-            case THIRD_PARTY:
-                return new ThirdPartyCodeSandBox();
-            case EXAMPLE:
-            default:
-                return new ExampleCodeSandBox();
-        }
+        return switch (sandBoxEnum) {
+            case REMOTE -> new RemoteCodeSandBox();
+            case THIRD_PARTY -> new ThirdPartyCodeSandBox();
+            default -> new ExampleCodeSandBox();
+        };
     }
 }

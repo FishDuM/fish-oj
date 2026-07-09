@@ -11,7 +11,7 @@ public enum SandBoxEnum {
 
     ;
 
-    String type;
+    final String type;
 
     SandBoxEnum(String type) {
         this.type = type;

@@ -2,6 +2,7 @@
 
 # Fish OJ
 
+
 [![Java](https://img.shields.io/badge/Java-21-ED8B00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.16-6DB33F?style=flat-square&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![MyBatis-Plus](https://img.shields.io/badge/MyBatis--Plus-3.5.9-1693E2?style=flat-square&logo=mybatis&logoColor=white)](https://baomidou.com/)
@@ -10,7 +11,12 @@
 [![Redis](https://img.shields.io/badge/Redis-7.x-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
 [![Hutool](https://img.shields.io/badge/Hutool-5.8.46-00BFB3?style=flat-square&logo=java&logoColor=white)](https://hutool.cn/)
 
-在线判题系统后端
+[![Vue](https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white)](https://vuejs.org/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Pinia](https://img.shields.io/badge/Pinia-2-F7D336?style=flat-square)](https://pinia.vuejs.org/)
+[![Ant Design Vue](https://img.shields.io/badge/Ant%20Design%20Vue-4-0170FE?style=flat-square&logo=antdesign&logoColor=white)](https://antdv.com/)
+[![Monaco Editor](https://img.shields.io/badge/Monaco%20Editor-latest-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white)](https://microsoft.github.io/monaco-editor/)
 
 </div>
 
@@ -28,7 +34,7 @@ mvn spring-boot:run
 
 ```
 auth     Sa-Token 自定义权限
-common   配置 / 异常 / 统一返回
+common   配置 / 异常 / 统一返回 / 枚举
 user     用户 + 做题统计
 problem  题目 + 测试用例
 tag      标签
@@ -46,7 +52,7 @@ judge    提交 + 判题明细
 |---|---|---|
 | POST | `/api/user/register` | 注册 |
 | POST | `/api/user/login` | 登录，返回 token |
-| GET  | `/api/problem/list` | 题目列表，可按 tagId 过滤 |
+| GET  | `/api/problem/list` | 题目列表，可按 tagId / difficulty 过滤 |
 | GET  | `/api/problem/{id}` | 题目详情 |
 | GET  | `/api/tag/list` | 标签列表 |
 
@@ -82,6 +88,10 @@ judge    提交 + 判题明细
 
 **错误码**：见 `common/exception/ErrorCode.java`，统一经 `GlobalExceptionHandler` 转 `Result` 返回。
 
+**状态枚举**：
+- `SubmitStatus` —— 提交状态（pending / judging / accepted / wrong_answer / ...）
+- `UserProblemStatus` —— 用户做题进度（none / attempted / ac）
+
 ## 判题
 
 `judge.codesendbox` 定义 `CodeSandBox` 接口，三种实现由 `CodeSandBoxFactory` 按类型返回：
@@ -98,3 +108,11 @@ judge    提交 + 判题明细
 1. 异步更新 submit 状态/得分/时间/内存
 2. 写入 `judge_case` 明细
 3. 调用 `userProblemService.recordSubmit` 累计统计
+
+## 前端
+
+`fish-oj-frontend/` 基于 Vue 3 + Vite + TypeScript + Pinia + Ant Design Vue + Monaco Editor。
+
+- 路由：`/`、`/problems`、`/problems/:id`、`/login`、`/register`、`/me`
+- API 通过 Vite dev proxy（`/api → http://localhost:8080`）转发到本后端
+- 提交后轮询 `/judge/submit/{id}` 直到判题完成，离开页面自动停止

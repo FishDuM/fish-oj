@@ -9,4 +9,9 @@ import lombok.EqualsAndHashCode;
 public class ProblemQuery extends PageQuery {
 
     private Long tagId;
+
+    /**
+     * 难度过滤 (easy/medium/hard), 与 problem.difficulty 字符串字段对应
+     */
+    private String difficulty;
 }
