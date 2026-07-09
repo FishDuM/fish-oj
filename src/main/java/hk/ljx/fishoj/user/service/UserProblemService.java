@@ -3,14 +3,19 @@ package hk.ljx.fishoj.user.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import hk.ljx.fishoj.user.entity.UserProblem;
 
+import java.util.List;
+
 public interface UserProblemService extends IService<UserProblem> {
 
     /**
      * 提交判题完成后调用, 更新用户做题统计
-     * @param userId    提交用户ID
-     * @param problemId 题目ID
-     * @param status    本次判题最终状态 (accepted, wrong_answer, ...)
-     * @param score     本次得分
      */
     void recordSubmit(Long userId, Long problemId, String status, int score);
+
+    List<UserProblem> listMy(Long userId);
+
+    /**
+     * 没提交过的题返一个空骨架, 前端不用判 null
+     */
+    UserProblem getOrEmpty(Long userId, Long problemId);
 }

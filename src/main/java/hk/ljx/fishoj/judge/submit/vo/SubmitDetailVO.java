@@ -1,4 +1,4 @@
-package hk.ljx.fishoj.judge.vo;
+package hk.ljx.fishoj.judge.submit.vo;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

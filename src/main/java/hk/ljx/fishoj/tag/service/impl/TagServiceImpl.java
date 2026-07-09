@@ -7,41 +7,59 @@ import hk.ljx.fishoj.tag.entity.Tag;
 import hk.ljx.fishoj.tag.mapper.ProblemTagMapper;
 import hk.ljx.fishoj.tag.mapper.TagMapper;
 import hk.ljx.fishoj.tag.service.TagService;
-import lombok.RequiredArgsConstructor;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagService {
 
-    private final ProblemTagMapper problemTagMapper;
+    @Resource
+    private ProblemTagMapper problemTagMapper;
 
+    /**
+     * 给题目绑定标签 (整组覆盖, 先清后插)
+     * @param problemId 题目 id
+     * @param tagIds 标签 id 列表, 空/null 表示清空
+     */
     @Override
     @Transactional
     public void bindProblemTags(Long problemId, List<Long> tagIds) {
+        // 先清后插, 整组覆盖, 避免旧关联残留
         problemTagMapper.delete(new LambdaQueryWrapper<ProblemTag>()
                 .eq(ProblemTag::getProblemId, problemId));
         if (tagIds == null || tagIds.isEmpty()) {
             return;
         }
         for (Long tagId : tagIds) {
-            ProblemTag pt = new ProblemTag();
-            pt.setProblemId(problemId);
-            pt.setTagId(tagId);
+            ProblemTag pt = ProblemTag.builder()
+                    .problemId(problemId)
+                    .tagId(tagId)
+                    .build();
             problemTagMapper.insert(pt);
         }
     }
 
+    /**
+     * 获取指定题目关联的全部标签 id
+     * @param problemId 题目 id
+     * @return 标签 id 列表
+     */
     @Override
     public List<Long> listTagIdsByProblem(Long problemId) {
+        // 只取 id 减少一次回表, 前端不直接用这个, 是给详情拼标签用的中间步骤
         return problemTagMapper.selectList(new LambdaQueryWrapper<ProblemTag>()
                         .eq(ProblemTag::getProblemId, problemId))
                 .stream().map(ProblemTag::getTagId).toList();
     }
 
+    /**
+     * 按 id 列表批量查询标签 (id 列表为空时返回空列表)
+     * @param tagIds 标签 id 列表
+     * @return 标签实体列表
+     */
     @Override
     public List<Tag> listTagsByIds(List<Long> tagIds) {
         if (tagIds == null || tagIds.isEmpty()) {

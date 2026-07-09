@@ -1,11 +1,17 @@
-package hk.ljx.fishoj.judge.entity;
+package hk.ljx.fishoj.judge.submit.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @TableName("submit")
 public class Submit {
 
@@ -20,6 +26,7 @@ public class Submit {
 
     private String code;
 
+    /** 见 SubmitStatus 枚举 */
     private String status;
 
     private Integer totalScore;

@@ -1,23 +1,27 @@
 package hk.ljx.fishoj.tag.controller;
 
-import cn.dev33.satoken.annotation.SaCheckRole;
 import hk.ljx.fishoj.common.response.Result;
 import hk.ljx.fishoj.tag.entity.Tag;
 import hk.ljx.fishoj.tag.service.TagService;
-import lombok.RequiredArgsConstructor;
+import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/tag")
-@RequiredArgsConstructor
 public class TagController {
 
-    private final TagService tagService;
+    @Resource
+    private TagService tagService;
 
+    /**
+     * 获取全部标签 (数据量小, 全量返回)
+     * @return 标签列表
+     */
     @GetMapping("/list")
     public Result<List<Tag>> list() {
+        // 标签数据少, 全量返即可
         return Result.success(tagService.list());
     }
 }

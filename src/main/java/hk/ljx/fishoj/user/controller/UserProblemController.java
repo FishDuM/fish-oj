@@ -2,11 +2,10 @@ package hk.ljx.fishoj.user.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import hk.ljx.fishoj.common.response.Result;
 import hk.ljx.fishoj.user.entity.UserProblem;
 import hk.ljx.fishoj.user.service.UserProblemService;
-import lombok.RequiredArgsConstructor;
+import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,36 +13,27 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/user/problem")
 @SaCheckLogin
-@RequiredArgsConstructor
 public class UserProblemController {
 
-    private final UserProblemService userProblemService;
+    @Resource
+    private UserProblemService userProblemService;
 
+    /**
+     * 获取当前用户的全部做题记录
+     * @return 做题记录列表, 按最近提交时间倒序
+     */
     @GetMapping("/list")
     public Result<List<UserProblem>> list() {
-        long userId = StpUtil.getLoginIdAsLong();
-        return Result.success(userProblemService.list(
-                new LambdaQueryWrapper<UserProblem>()
-                        .eq(UserProblem::getUserId, userId)
-                        .orderByDesc(UserProblem::getLastSubmitTime)));
+        return Result.success(userProblemService.listMy(StpUtil.getLoginIdAsLong()));
     }
 
+    /**
+     * 获取当前用户在某题上的做题进度
+     * @param problemId 题目 id
+     * @return 做题记录, 若没提交过则返回空骨架
+     */
     @GetMapping("/{problemId}")
     public Result<UserProblem> get(@PathVariable Long problemId) {
-        long userId = StpUtil.getLoginIdAsLong();
-        UserProblem up = userProblemService.getOne(
-                new LambdaQueryWrapper<UserProblem>()
-                        .eq(UserProblem::getUserId, userId)
-                        .eq(UserProblem::getProblemId, problemId));
-        if (up == null) {
-            up = new UserProblem();
-            up.setUserId(userId);
-            up.setProblemId(problemId);
-            up.setStatus("none");
-            up.setBestScore(0);
-            up.setSubmitCount(0);
-            up.setAcCount(0);
-        }
-        return Result.success(up);
+        return Result.success(userProblemService.getOrEmpty(StpUtil.getLoginIdAsLong(), problemId));
     }
 }
