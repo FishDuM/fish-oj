@@ -1,13 +1,16 @@
 package hk.ljx.fishoj.problem.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import hk.ljx.fishoj.common.exception.BusinessException;
 import hk.ljx.fishoj.common.exception.ErrorCode;
 import hk.ljx.fishoj.problem.dto.AdminProblemQuery;
+import hk.ljx.fishoj.problem.dto.ProblemDTO;
 import hk.ljx.fishoj.problem.dto.ProblemQuery;
 import hk.ljx.fishoj.problem.entity.Problem;
 import hk.ljx.fishoj.problem.mapper.ProblemMapper;
@@ -15,12 +18,16 @@ import hk.ljx.fishoj.problem.service.ProblemService;
 import hk.ljx.fishoj.problem.vo.ProblemDetailVO;
 import hk.ljx.fishoj.problem.vo.ProblemListVO;
 import hk.ljx.fishoj.problem.vo.ProblemVO;
+import hk.ljx.fishoj.tag.entity.ProblemTag;
 import hk.ljx.fishoj.tag.entity.Tag;
+import hk.ljx.fishoj.tag.mapper.ProblemTagMapper;
 import hk.ljx.fishoj.tag.service.TagService;
 import hk.ljx.fishoj.tag.vo.TagVO;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -28,6 +35,9 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
 
     @Resource
     private TagService tagService;
+
+    @Resource
+    private ProblemTagMapper problemTagMapper;
 
     /**
      * 管理端题目分页 (看全部状态, 含草稿/隐藏)
@@ -55,9 +65,17 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
                         Problem::getCreateTime)
                 .orderByDesc(Problem::getCreateTime);
         if (query.getTagId() != null) {
-            // 通过子查询关联 problem_tag, 避免先加载所有 ID 到内存
-            wrapper.inSql(Problem::getId,
-                    "SELECT problem_id FROM problem_tag WHERE tag_id = " + query.getTagId());
+            // 通过 problem_tag 关联取题目 id, 走 mybatis-plus 参数化查询, 避免 SQL 注入
+            List<Long> problemIds = problemTagMapper.selectList(new LambdaQueryWrapper<ProblemTag>()
+                            .eq(ProblemTag::getTagId, query.getTagId()))
+                    .stream().map(ProblemTag::getProblemId).toList();
+            if (problemIds.isEmpty()) {
+                // 没有任何题目, 直接返空 (in(emptyList) 不会报错, 但显式返空更清晰)
+                Page<ProblemListVO> empty = new Page<>(query.getPage(), query.getSize(), 0);
+                empty.setRecords(Collections.emptyList());
+                return empty;
+            }
+            wrapper.in(Problem::getId, problemIds);
         }
         if (query.getDifficulty() != null && !query.getDifficulty().isBlank()) {
             wrapper.eq(Problem::getDifficulty, query.getDifficulty());
@@ -101,28 +119,42 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     }
 
     /**
-     * 管理员创建题目 (自动写入当前管理员为创建人)
-     * @param problem 题目实体
-     * @param currentUserId 当前管理员 id
+     * 管理员创建题目 (强制 createUserId=当前管理员, createTime=now, 忽略客户端传入;
+     * 当前管理员 id 由 service 从 StpUtil 读取)
+     * @param dto 题目入参
      * @return 创建后的题目实体
      */
     @Override
-    public Problem createByAdmin(Problem problem, Long currentUserId) {
-        // 创建人=当前管理员 id, 后续可能按这个字段做权限
-        problem.setCreateUserId(currentUserId);
+    public Problem createByAdmin(ProblemDTO dto) {
+        Problem problem = new Problem();
+        BeanUtil.copyProperties(dto, problem);
+        // 创建人=当前管理员 id, 客户端无权指定
+        problem.setCreateUserId(StpUtil.getLoginIdAsLong());
+        // 兜底: 即使 MyMetaObjectHandler 未生效也强制写入创建时间
+        problem.setCreateTime(LocalDateTime.now());
         save(problem);
         return problem;
     }
 
     /**
-     * 管理员更新题目
+     * 管理员更新题目 (仅动 title/description/难度/时间/内存, 不碰 createUserId/status)
      * @param id 题目 id
-     * @param problem 题目实体
+     * @param dto 题目入参
      */
     @Override
-    public void updateByAdmin(Long id, Problem problem) {
-        problem.setId(id);
-        updateById(problem);
+    public void updateByAdmin(Long id, ProblemDTO dto) {
+        LambdaUpdateWrapper<Problem> wrapper = new LambdaUpdateWrapper<Problem>()
+                .eq(Problem::getId, id)
+                .set(Problem::getTitle, dto.getTitle())
+                .set(Problem::getDescription, dto.getDescription())
+                .set(Problem::getInputDesc, dto.getInputDesc())
+                .set(Problem::getOutputDesc, dto.getOutputDesc())
+                .set(Problem::getSampleInput, dto.getSampleInput())
+                .set(Problem::getSampleOutput, dto.getSampleOutput())
+                .set(Problem::getDifficulty, dto.getDifficulty())
+                .set(Problem::getTimeLimitMs, dto.getTimeLimitMs())
+                .set(Problem::getMemoryLimitKb, dto.getMemoryLimitKb());
+        update(wrapper);
     }
 
     /**

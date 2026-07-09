@@ -27,6 +27,7 @@ public class ProblemVO {
 
     private String sampleOutput;
 
+    /** 难度 (取值见 DifficultyEnum) */
     private String difficulty;
 
     private Integer timeLimitMs;

@@ -100,7 +100,7 @@ function resetFilter() {
     </div>
 
     <a-pagination
-      v-if="problemStore.total > size"
+      v-if="problemStore.total > 0"
       style="margin-top: 16px; text-align: right"
       :current="page"
       :page-size="size"

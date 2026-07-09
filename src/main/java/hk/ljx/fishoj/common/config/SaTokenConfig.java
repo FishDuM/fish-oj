@@ -13,9 +13,11 @@ public class SaTokenConfig implements WebMvcConfigurer {
         registry.addInterceptor(new SaInterceptor())
                 .addPathPatterns("/**")
                 .excludePathPatterns(
-                        "/api/user/register",
-                        "/api/user/login",
-                        "/api/tag/list"
+                        // 注意: Sa-Token 拦截器看的是 request.getRequestURI(),
+                        // 该值已包含 context-path (/api), 所以排除路径不能写 /api 前缀
+                        "/user/register",
+                        "/user/login",
+                        "/tag/list"
                 );
     }
 }

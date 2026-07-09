@@ -12,10 +12,13 @@ public interface UserProblemService extends IService<UserProblem> {
      */
     void recordSubmit(Long userId, Long problemId, String status, int score);
 
-    List<UserProblem> listMy(Long userId);
+    /**
+     * 获取当前登录用户的全部做题记录
+     */
+    List<UserProblem> listMy();
 
     /**
-     * 没提交过的题返一个空骨架, 前端不用判 null
+     * 获取当前登录用户在某题上的做题进度 (没提交过则返回空骨架)
      */
-    UserProblem getOrEmpty(Long userId, Long problemId);
+    UserProblem getOrEmpty(Long problemId);
 }

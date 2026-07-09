@@ -1,4 +1,4 @@
-package hk.ljx.fishoj.judge.submit.vo;
+package hk.ljx.fishoj.judge.judgeCase.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

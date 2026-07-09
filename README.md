@@ -38,8 +38,10 @@ common   配置 / 异常 / 统一返回 / 枚举
 user     用户 + 做题统计
 problem  题目 + 测试用例
 tag      标签
-judge    提交 + 判题明细
-└─ codesendbox  代码沙箱接口 + 三种实现
+judge    提交 + 判题结果 + 沙箱
+├─ submit      提交（/api/submit/*）
+├─ judgeCase   判题结果明细（judge_case 表）
+└─ codesendbox 代码沙箱接口 + 三种实现
 ```
 
 ## API
@@ -62,10 +64,10 @@ judge    提交 + 判题明细
 |---|---|---|
 | GET  | `/api/user/me` | 当前用户信息 |
 | POST | `/api/user/logout` | 登出 |
-| POST | `/api/judge/submit` | 提交代码，返回 submit id |
-| GET  | `/api/judge/submit/{id}` | 提交详情（仅本人/管理员） |
-| GET  | `/api/judge/submit/{id}/cases` | 每个用例的判题明细 |
-| GET  | `/api/judge/submit/list` | 我的提交列表 |
+| POST | `/api/submit` | 提交代码，返回 submit id |
+| GET  | `/api/submit/{id}` | 提交详情（仅本人/管理员） |
+| GET  | `/api/submit/{id}/cases` | 每个用例的判题明细 |
+| GET  | `/api/submit/list` | 我的提交列表 |
 | GET  | `/api/user/problem/list` | 我的做题记录 |
 | GET  | `/api/user/problem/{problemId}` | 单题统计 |
 
@@ -73,7 +75,7 @@ judge    提交 + 判题明细
 
 | Prefix | 说明 |
 |---|---|
-| `/api/admin/user` | 用户管理 |
+| `/api/admin/user` | 用户管理（创建 / 更新资料 / 修改角色 `PUT /{id}/role` / 删除） |
 | `/api/admin/problem` | 题目管理 |
 | `/api/admin/test-case` | 测试用例管理 |
 | `/api/admin/tag` | 标签 + 题目绑定 |
@@ -88,9 +90,11 @@ judge    提交 + 判题明细
 
 **错误码**：见 `common/exception/ErrorCode.java`，统一经 `GlobalExceptionHandler` 转 `Result` 返回。
 
-**状态枚举**：
-- `SubmitStatus` —— 提交状态（pending / judging / accepted / wrong_answer / ...）
-- `UserProblemStatus` —— 用户做题进度（none / attempted / ac）
+**状态枚举**（统一在 `common/constant/`）：
+- `SubmitStatus` —— 提交状态（PENDING / JUDGING / ACCEPTED / WRONG_ANSWER / TIME_LIMIT_EXCEEDED / MEMORY_LIMIT_EXCEEDED / COMPILE_ERROR / RUNTIME_ERROR）
+- `UserProblemStatus` —— 用户做题进度（NONE / ATTEMPTED / AC）
+- `RoleEnum` —— 用户角色（admin / user，DB 与 Sa-Token 都存字符串 value）
+- `DifficultyEnum` —— 题目难度（easy / medium / hard）
 
 ## 判题
 
@@ -104,9 +108,9 @@ judge    提交 + 判题明细
 
 切换方式：`application.yaml` 中改 `codesandbox.type`，对应枚举值见 `SandBoxEnum`。
 
-`SubmitServiceImpl.submit` 只做"记录 pending 提交"，调用方需自行触发判题并：
-1. 异步更新 submit 状态/得分/时间/内存
-2. 写入 `judge_case` 明细
+`SubmitServiceImpl.submit` 只做"记录 pending 提交"，真实判题由 **`JudgeService.judgeAsync(submitId)`** 异步执行（**待接入**），需要做三件事：
+1. 调用沙箱跑用例，异步更新 submit 状态 / 得分 / 时间 / 内存 / errorMessage
+2. 写入 `judge_case` 明细（每条用例一行）
 3. 调用 `userProblemService.recordSubmit` 累计统计
 
 ## 前端
@@ -115,4 +119,4 @@ judge    提交 + 判题明细
 
 - 路由：`/`、`/problems`、`/problems/:id`、`/login`、`/register`、`/me`
 - API 通过 Vite dev proxy（`/api → http://localhost:8080`）转发到本后端
-- 提交后轮询 `/judge/submit/{id}` 直到判题完成，离开页面自动停止
+- 提交后轮询 `/submit/{id}` 直到判题完成，离开页面自动停止

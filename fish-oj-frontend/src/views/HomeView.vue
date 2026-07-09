@@ -47,9 +47,6 @@ onMounted(async () => {
         <div class="problem-row__title">
           <router-link :to="`/problems/${p.id}`">{{ p.title }}</router-link>
         </div>
-        <div>
-          <span v-for="t in (p as any).tags || []" :key="t.id" class="tag-chip">{{ t.name }}</span>
-        </div>
         <div style="text-align: right">
           <a-button type="link" @click.stop="router.push(`/problems/${p.id}`)">开始答题 →</a-button>
         </div>

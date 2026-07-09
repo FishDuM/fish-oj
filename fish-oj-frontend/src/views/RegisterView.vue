@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { message } from 'ant-design-vue'
@@ -7,7 +7,7 @@ import { message } from 'ant-design-vue'
 const auth = useAuthStore()
 const router = useRouter()
 const form = reactive({ username: '', password: '', nickname: '', email: '' })
-const loading = reactive({ value: false })
+const loading = ref(false)
 
 async function onSubmit() {
   if (!form.username || !form.password) {
@@ -20,7 +20,7 @@ async function onSubmit() {
     message.success('注册成功，请登录')
     router.push('/login')
   } catch {
-    /* ignore */
+    /* 拦截器已弹错, 表单保留 */
   } finally {
     loading.value = false
   }
@@ -31,12 +31,12 @@ async function onSubmit() {
   <div class="auth-page">
     <div class="auth-card">
       <h2>注册 Fish OJ</h2>
-      <a-form layout="vertical">
+      <a-form layout="vertical" @finish="onSubmit">
         <a-form-item label="用户名">
           <a-input v-model:value="form.username" placeholder="字母数字下划线" size="large" />
         </a-form-item>
         <a-form-item label="密码">
-          <a-input-password v-model:value="form.password" placeholder="至少 6 位" size="large" />
+          <a-input-password v-model:value="form.password" placeholder="至少 8 位" size="large" />
         </a-form-item>
         <a-form-item label="昵称">
           <a-input v-model:value="form.nickname" placeholder="可选" size="large" />
@@ -47,7 +47,8 @@ async function onSubmit() {
         <a-button
           type="primary"
           size="large"
-          :loading="loading.value"
+          html-type="submit"
+          :loading="loading"
           class="submit"
           @click="onSubmit"
         >

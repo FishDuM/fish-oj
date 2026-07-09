@@ -17,6 +17,7 @@ public class ProblemListVO {
 
     private String title;
 
+    /** 难度 (取值见 DifficultyEnum) */
     private String difficulty;
 
     private LocalDateTime createTime;

@@ -1,7 +1,6 @@
 package hk.ljx.fishoj.tag.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
-import hk.ljx.fishoj.common.exception.ErrorCode;
 import hk.ljx.fishoj.common.response.Result;
 import hk.ljx.fishoj.tag.entity.Tag;
 import hk.ljx.fishoj.tag.service.TagService;
@@ -12,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/tag")
+@RequestMapping("/admin/tag")
 @SaCheckRole("admin")
 public class AdminTagController {
 
@@ -21,7 +20,7 @@ public class AdminTagController {
 
     /**
      * 创建标签
-     * @param tag 标签实体
+     * @param tag 标签实体 (name 必填)
      */
     @PostMapping
     public Result<Void> create(@Valid @RequestBody Tag tag) {
@@ -30,14 +29,13 @@ public class AdminTagController {
     }
 
     /**
-     * 更新标签
+     * 更新标签 (id 由路径参数注入, 不接受 body 里的 id 覆盖)
      * @param id 标签 id
-     * @param tag 标签实体
+     * @param tag 待更新字段 (name)
      */
     @PutMapping("/{id}")
-    public Result<Void> update(@PathVariable Long id, @RequestBody Tag tag) {
-        tag.setId(id);
-        tagService.updateById(tag);
+    public Result<Void> update(@PathVariable Long id, @Valid @RequestBody Tag tag) {
+        tagService.updateByAdmin(id, tag);
         return Result.success();
     }
 

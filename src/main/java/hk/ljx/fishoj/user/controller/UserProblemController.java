@@ -1,7 +1,6 @@
 package hk.ljx.fishoj.user.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import cn.dev33.satoken.stp.StpUtil;
 import hk.ljx.fishoj.common.response.Result;
 import hk.ljx.fishoj.user.entity.UserProblem;
 import hk.ljx.fishoj.user.service.UserProblemService;
@@ -11,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/user/problem")
+@RequestMapping("/user/problem")
 @SaCheckLogin
 public class UserProblemController {
 
@@ -24,7 +23,7 @@ public class UserProblemController {
      */
     @GetMapping("/list")
     public Result<List<UserProblem>> list() {
-        return Result.success(userProblemService.listMy(StpUtil.getLoginIdAsLong()));
+        return Result.success(userProblemService.listMy());
     }
 
     /**
@@ -34,6 +33,6 @@ public class UserProblemController {
      */
     @GetMapping("/{problemId}")
     public Result<UserProblem> get(@PathVariable Long problemId) {
-        return Result.success(userProblemService.getOrEmpty(StpUtil.getLoginIdAsLong(), problemId));
+        return Result.success(userProblemService.getOrEmpty(problemId));
     }
 }

@@ -1,6 +1,6 @@
 package hk.ljx.fishoj.judge.codesendbox.vo;
 
-import hk.ljx.fishoj.judge.submit.entity.JudgeCase;
+import hk.ljx.fishoj.judge.judgeCase.entity.JudgeCase;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/auth'
 import DifficultyBadge from '@/components/DifficultyBadge.vue'
 import StatusPill from '@/components/StatusPill.vue'
 import { useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
 
 // Monaco workers（Vite 注入）
 self.MonacoEnvironment = {
@@ -28,6 +29,7 @@ const judgeStore = useJudgeStore()
 const auth = useAuthStore()
 
 const problem = ref<ProblemDetailVO | null>(null)
+const loading = ref(false)
 const language = ref<'java' | 'cpp' | 'python'>('java')
 const code = ref('')
 const editorRef = ref<HTMLElement | null>(null)
@@ -54,41 +56,30 @@ public:
 `,
 }
 
+function resetJudgeState() {
+  // 切换题目时清掉上一次的判题结果, 避免跨题串状态
+  judgeStore.current = null
+  judgeStore.cases = []
+}
+
 async function loadProblem() {
   const id = Number(route.params.id)
+  loading.value = true
+  resetJudgeState()
   try {
     const detail = await problemStore.fetchDetail(id)
     problem.value = detail
-    // 后端没数据时给个兜底，方便前端独立演示
-    if (!detail || !detail.problem) {
-      problem.value = {
-        problem: {
-          id,
-          title: `题目 #${id}`,
-          difficulty: 'easy',
-          description: '请在此处实现题目要求的方法。',
-          inputDesc: '第一行两个整数 x, y',
-          outputDesc: '输出 x + y 的结果',
-          sampleInput: '2 3',
-          sampleOutput: '5',
-        },
-        tags: [],
-      }
+  } catch (e: any) {
+    // 真实错误显式提示, 不要再用假数据静默兜底
+    problem.value = null
+    const code = e?.code
+    if (code === 40402 || code === 40400) {
+      message.error('题目不存在')
+    } else {
+      message.error('加载失败，请重试')
     }
-  } catch {
-    problem.value = {
-      problem: {
-        id,
-        title: `题目 #${id}`,
-        difficulty: 'easy',
-        description: '请在此处实现题目要求的方法。',
-        inputDesc: '第一行两个整数 x, y',
-        outputDesc: '输出 x + y 的结果',
-        sampleInput: '2 3',
-        sampleOutput: '5',
-      },
-      tags: [],
-    }
+  } finally {
+    loading.value = false
   }
 }
 
@@ -118,6 +109,14 @@ onBeforeUnmount(() => {
   judgeStore.cancel()
 })
 
+// 题目 id 变化时重新加载 (SPA 内部跳转 /problems/1 -> /problems/2)
+watch(
+  () => route.params.id,
+  () => {
+    loadProblem()
+  },
+)
+
 watch(language, (lang) => {
   if (!lang) return
   code.value = STARTER[lang]
@@ -132,7 +131,7 @@ async function submit() {
     router.push({ path: '/login', query: { redirect: route.fullPath } })
     return
   }
-  if (!problem.value) return
+  if (!problem.value || judgeStore.polling) return
   try {
     await judgeStore.submitAndWait({
       problemId: problem.value.problem.id,
@@ -151,7 +150,13 @@ async function runSample() {
 </script>
 
 <template>
-  <div class="split" v-if="problem">
+  <div v-if="loading" style="padding: 48px; text-align: center; color: #8c8c8c">
+    加载中...
+  </div>
+  <div v-else-if="!problem" class="empty" style="padding: 48px; text-align: center; color: #8c8c8c">
+    题目不存在或加载失败
+  </div>
+  <div class="split" v-else>
     <!-- 左：题干 -->
     <div class="split__pane">
       <div class="problem-detail">
@@ -195,10 +200,10 @@ async function runSample() {
           <a-select-option value="python">Python</a-select-option>
         </a-select>
         <span class="spacer" />
-        <a-button size="small" @click="runSample">
+        <a-button size="small" :disabled="judgeStore.polling" @click="runSample">
           <PlayCircleOutlined />运行
         </a-button>
-        <a-button size="small" type="primary" @click="submit">
+        <a-button size="small" type="primary" :disabled="judgeStore.polling" :loading="judgeStore.polling" @click="submit">
           <SendOutlined />提交
         </a-button>
       </div>

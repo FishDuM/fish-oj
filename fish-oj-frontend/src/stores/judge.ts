@@ -62,21 +62,21 @@ export const useJudgeStore = defineStore('judge', () => {
   const current = ref<SubmitDetailVO | null>(null)
   const cases = ref<JudgeCaseRow[]>([])
   const polling = ref(false)
-  // 轮询取消标志：组件卸载时调用 cancel() 让 poll 跳出 while 循环
-  let cancelPoll = false
+  // 当前正在轮询的提交 id, 用于 cancel 时让 poll 跳出
+  let inFlightSubmissionId: number | null = null
 
   async function submit(req: SubmitReq) {
-    const data = await request<{ id: number }>({
-      url: '/judge/submit',
+    const id = await request<number>({
+      url: '/submit',
       method: 'POST',
       data: req,
     })
-    return data.id
+    return id
   }
 
   async function getDetail(id: number) {
     const data = await request<SubmitDetailVO>({
-      url: `/judge/submit/${id}`,
+      url: `/submit/${id}`,
       method: 'GET',
     })
     current.value = data
@@ -85,27 +85,28 @@ export const useJudgeStore = defineStore('judge', () => {
 
   async function getCases(id: number) {
     const data = await request<JudgeCaseVO[]>({
-      url: `/judge/submit/${id}/cases`,
+      url: `/submit/${id}/cases`,
       method: 'GET',
     })
     cases.value = (data || []).map((c, i) => ({ ...c, index: i + 1 }))
     return cases.value
   }
 
-  /** 取消当前轮询（组件卸载时调用，避免离开页面还在打 /judge/submit/{id}） */
+  /** 取消当前轮询（组件卸载时调用，避免离开页面还在打 /submit/{id}） */
   function cancel() {
-    cancelPoll = true
+    inFlightSubmissionId = null
   }
 
   /** 轮询直到状态不再是 pending/judging，最多 maxAttempts 次（兜底防后端一直 pending） */
   async function poll(id: number, intervalMs = 1500, maxAttempts = 120) {
     polling.value = true
-    cancelPoll = false
+    inFlightSubmissionId = id
     try {
       for (let i = 0; i < maxAttempts; i++) {
-        if (cancelPoll) return null
+        // cancel() 会把 inFlightSubmissionId 置为 null, 借此跳出循环
+        if (inFlightSubmissionId !== id) return null
         const detail = await getDetail(id)
-        if (cancelPoll) return null
+        if (inFlightSubmissionId !== id) return null
         if (detail.status !== 'pending' && detail.status !== 'judging') {
           await getCases(id)
           return detail
@@ -114,7 +115,10 @@ export const useJudgeStore = defineStore('judge', () => {
       }
       return null
     } finally {
-      polling.value = false
+      if (inFlightSubmissionId === id) {
+        polling.value = false
+        inFlightSubmissionId = null
+      }
     }
   }
 

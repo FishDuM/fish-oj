@@ -3,7 +3,7 @@ package hk.ljx.fishoj.judge.codesendbox.service.impl;
 import hk.ljx.fishoj.judge.codesendbox.service.CodeSandBox;
 import hk.ljx.fishoj.judge.codesendbox.vo.ExecuteCodeResponse;
 import hk.ljx.fishoj.judge.submit.dto.SubmitRequest;
-import hk.ljx.fishoj.judge.submit.entity.JudgeCase;
+import hk.ljx.fishoj.judge.judgeCase.entity.JudgeCase;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;

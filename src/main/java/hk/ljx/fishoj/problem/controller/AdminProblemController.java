@@ -1,10 +1,10 @@
 package hk.ljx.fishoj.problem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
-import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import hk.ljx.fishoj.common.response.Result;
 import hk.ljx.fishoj.problem.dto.AdminProblemQuery;
+import hk.ljx.fishoj.problem.dto.ProblemDTO;
 import hk.ljx.fishoj.problem.entity.Problem;
 import hk.ljx.fishoj.problem.service.ProblemService;
 import jakarta.annotation.Resource;
@@ -12,7 +12,7 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/admin/problem")
+@RequestMapping("/admin/problem")
 @SaCheckRole("admin")
 public class AdminProblemController {
 
@@ -40,23 +40,23 @@ public class AdminProblemController {
     }
 
     /**
-     * 创建题目, 自动写入当前管理员为创建人
-     * @param problem 题目实体
+     * 创建题目 (创建人 = 当前管理员, 由 service 内部从登录上下文读取)
+     * @param dto 题目入参
      */
     @PostMapping
-    public Result<Void> create(@Valid @RequestBody Problem problem) {
-        problemService.createByAdmin(problem, StpUtil.getLoginIdAsLong());
+    public Result<Void> create(@Valid @RequestBody ProblemDTO dto) {
+        problemService.createByAdmin(dto);
         return Result.success();
     }
 
     /**
-     * 更新题目
+     * 更新题目 (仅动 title/description/难度/时间/内存)
      * @param id 题目 id
-     * @param problem 题目实体
+     * @param dto 题目入参
      */
     @PutMapping("/{id}")
-    public Result<Void> update(@PathVariable Long id, @Valid @RequestBody Problem problem) {
-        problemService.updateByAdmin(id, problem);
+    public Result<Void> update(@PathVariable Long id, @Valid @RequestBody ProblemDTO dto) {
+        problemService.updateByAdmin(id, dto);
         return Result.success();
     }
 

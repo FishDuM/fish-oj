@@ -1,7 +1,6 @@
 package hk.ljx.fishoj.user.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import hk.ljx.fishoj.common.response.Result;
 import hk.ljx.fishoj.user.dto.LoginRequest;
@@ -13,10 +12,8 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/user")
 public class UserController {
 
     @Resource
@@ -38,32 +35,30 @@ public class UserController {
      * @return 登录成功后的 token
      */
     @PostMapping("/login")
-    public Result<Map<String, String>> login(@Valid @RequestBody LoginRequest request) {
+    public Result<String> login(@Valid @RequestBody LoginRequest request) {
         // 登录成功直接返回 token, 前端存到 localStorage
-        String token = userService.login(request);
-        return Result.success(Map.of("token", token));
+        return Result.success(userService.login(request));
     }
 
     /**
-     * 退出登录, 清掉当前 session + token
+     * 退出登录 (清掉 session + token, 由 service 内部处理)
      */
     @PostMapping("/logout")
     @SaCheckLogin
     public Result<Void> logout() {
-        // 清掉 session + token
-        StpUtil.logout();
+        userService.logout();
         return Result.success();
     }
 
     /**
-     * 获取当前登录用户信息
+     * 获取当前登录用户信息 (用户 id 由 service 从上下文读取)
      * @return 当前用户的 VO (不含密码字段)
      */
     @GetMapping("/me")
     @SaCheckLogin
     public Result<UserVO> me() {
         // 用 VO 而不是直接返 Entity, 防止 password 字段漏出去
-        User user = userService.getCurrentUser(StpUtil.getLoginIdAsLong());
+        User user = userService.getCurrentUser();
         UserVO vo = new UserVO();
         BeanUtil.copyProperties(user, vo);
         return Result.success(vo);

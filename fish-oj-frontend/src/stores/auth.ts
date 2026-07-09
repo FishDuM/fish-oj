@@ -41,12 +41,12 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login(req: LoginReq) {
-    const data = await request<{ token: string }>({
+    const token = await request<string>({
       url: '/user/login',
       method: 'POST',
       data: req,
     })
-    setToken(data.token)
+    setToken(token)
     await fetchMe()
   }
 
@@ -77,5 +77,5 @@ export const useAuthStore = defineStore('auth', () => {
     clear()
   }
 
-  return { token, user, isLogin, login, register, logout, fetchMe }
+  return { token, user, isLogin, login, register, logout, fetchMe, clear, setToken }
 })

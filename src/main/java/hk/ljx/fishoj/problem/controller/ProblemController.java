@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 
 @RestController
-@RequestMapping("/api/problem")
+@RequestMapping("/problem")
 public class ProblemController {
 
     @Resource

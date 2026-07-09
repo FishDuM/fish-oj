@@ -1,6 +1,9 @@
 server:
   port: 8080
+  # 全局上下文前缀, 所有 controller @RequestMapping 都不再写 /api
+  # 最终访问路径形如: http://localhost:8080/api/user/login
   servlet:
+    context-path: /api
     encoding:
       charset: UTF-8
       enabled: true
@@ -11,6 +14,8 @@ spring:
     name: fish-oj
   jackson:
     default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
     encoding:
       charset: UTF-8
 

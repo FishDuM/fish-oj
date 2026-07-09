@@ -1,4 +1,4 @@
-package hk.ljx.fishoj.judge.submit.entity;
+package hk.ljx.fishoj.judge.judgeCase.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -22,7 +22,7 @@ public class JudgeCase {
 
     private Long testCaseId;
 
-    /** 见 SubmitStatus 枚举 */
+    /** 判题用例状态, 取值复用 SubmitStatus (PENDING/JUDGING/ACCEPTED/WRONG_ANSWER/...) */
     private String status;
 
     private Integer timeUsedMs;

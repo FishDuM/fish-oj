@@ -3,12 +3,17 @@ package hk.ljx.fishoj.user.service.impl;
 import cn.dev33.satoken.secure.BCrypt;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import hk.ljx.fishoj.common.constant.RoleEnum;
 import hk.ljx.fishoj.common.exception.BusinessException;
 import hk.ljx.fishoj.common.exception.ErrorCode;
+import hk.ljx.fishoj.user.dto.AdminCreateUserRequest;
+import hk.ljx.fishoj.user.dto.AdminUpdateUserRequest;
 import hk.ljx.fishoj.user.dto.AdminUserQuery;
 import hk.ljx.fishoj.user.dto.LoginRequest;
 import hk.ljx.fishoj.user.dto.RegisterRequest;
@@ -35,7 +40,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .password(BCrypt.hashpw(request.getPassword()))
                 .nickname(request.getNickname() != null ? request.getNickname() : request.getUsername())
                 .email(request.getEmail())
-                .role("user")
+                .role(RoleEnum.USER.getValue())
                 .build();
         try {
             save(user);
@@ -68,13 +73,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     /**
-     * 按 id 获取当前用户实体
-     * @param currentUserId 当前登录用户 id
+     * 退出登录 (清掉当前 session + token, 由 StpUtil 自动定位当前登录用户)
+     */
+    @Override
+    public void logout() {
+        StpUtil.logout();
+    }
+
+    /**
+     * 获取当前登录用户实体 (用户 id 从 StpUtil 读)
      * @return 用户实体
      */
     @Override
-    public User getCurrentUser(Long currentUserId) {
-        User user = getById(currentUserId);
+    public User getCurrentUser() {
+        User user = getById(StpUtil.getLoginIdAsLong());
         if (user == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
@@ -119,41 +131,75 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     /**
      * 管理员创建用户 (强制 role=user, BCrypt 加密密码)
-     * @param user 用户实体
+     * @param request 创建请求
      * @return 创建后的用户实体
      */
     @Override
-    public User createByAdmin(User user) {
-        // 强制 user 角色, 防止前台传 role="admin" 越权
-        user.setRole("user");
-        user.setPassword(BCrypt.hashpw(user.getPassword()));
-        save(user);
+    public User createByAdmin(AdminCreateUserRequest request) {
+        User user = User.builder()
+                .username(request.getUsername())
+                // 强制 user 角色, 防止前台传 admin 越权
+                .role(RoleEnum.USER.getValue())
+                .password(BCrypt.hashpw(request.getPassword()))
+                .nickname(request.getNickname() != null ? request.getNickname() : request.getUsername())
+                .email(request.getEmail())
+                .build();
+        try {
+            save(user);
+        } catch (DuplicateKeyException e) {
+            throw new BusinessException(ErrorCode.USER_ALREADY_EXISTS);
+        }
         return user;
     }
 
     /**
-     * 管理员更新用户 (密码非空才重置, 空字符串视为不动密码)
+     * 管理员更新用户 (仅动 nickname/email/password, 不碰 username/role/createTime/id)
+     * 密码非空才重置, 空字符串视为不动密码
      * @param id 用户 id
-     * @param user 用户实体
+     * @param request 更新请求
      */
     @Override
-    public void updateByAdmin(Long id, User user) {
-        user.setId(id);
-        // 密码非空才重置, 空字符串视为不动密码
-        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
-            user.setPassword(BCrypt.hashpw(user.getPassword()));
-        } else {
-            user.setPassword(null);
+    public void updateByAdmin(Long id, AdminUpdateUserRequest request) {
+        UpdateWrapper<User> wrapper = new UpdateWrapper<>();
+        wrapper.eq("id", id);
+        if (StrUtil.isNotBlank(request.getNickname())) {
+            wrapper.set("nickname", request.getNickname());
         }
-        updateById(user);
+        // email 始终更新 (允许清空为 null)
+        wrapper.set("email", request.getEmail());
+        // 密码非空才重置, 空字符串视为不动密码
+        if (StrUtil.isNotBlank(request.getPassword())) {
+            wrapper.set("password", BCrypt.hashpw(request.getPassword()));
+        }
+        update(wrapper);
     }
 
     /**
-     * 按 id 删除用户
+     * 管理员修改用户角色 (改动后强制该用户下线, 下次请求从库刷新角色)
+     * @param id 用户 id
+     * @param role 新角色, 仅接受 RoleEnum 中定义的值
+     */
+    @Override
+    public void updateRole(Long id, String role) {
+        if (RoleEnum.getEnum(role) == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "非法角色: " + role);
+        }
+        UpdateWrapper<User> wrapper = new UpdateWrapper<>();
+        wrapper.eq("id", id).set("role", role);
+        update(wrapper);
+        // 让该用户会话失效, 避免 session 里的旧角色一直有效
+        StpUtil.logout(id);
+    }
+
+    /**
+     * 按 id 删除用户 (不能删除自己, 自删除校验由 service 从登录上下文读取)
      * @param id 用户 id
      */
     @Override
     public void deleteById(Long id) {
+        if (id.equals(StpUtil.getLoginIdAsLong())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "不能删除自己");
+        }
         removeById(id);
     }
 }

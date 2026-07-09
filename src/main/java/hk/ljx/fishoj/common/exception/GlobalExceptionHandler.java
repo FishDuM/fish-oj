@@ -32,6 +32,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotLoginException.class)
     @ResponseStatus(HttpStatus.OK)
     public Result<Void> handleNotLogin(NotLoginException e) {
+        // -2 无效 token, -3 token 已过期 -> 登录已过期; 其余 -> 未登录
+        String type = e.getType();
+        if (NotLoginException.INVALID_TOKEN.equals(type) || NotLoginException.TOKEN_TIMEOUT.equals(type)) {
+            return Result.error(ErrorCode.TOKEN_EXPIRED.getCode(), ErrorCode.TOKEN_EXPIRED.getMessage());
+        }
         return Result.error(ErrorCode.NOT_LOGIN.getCode(), ErrorCode.NOT_LOGIN.getMessage());
     }
 
@@ -45,6 +50,6 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<Void> handleException(Exception e) {
         log.error("Unhandled exception", e);
-        return Result.error(ErrorCode.SYSTEM_ERROR.getCode(), ErrorCode.SYSTEM_ERROR.getMessage() + ": " + e.getMessage());
+        return Result.error(ErrorCode.SYSTEM_ERROR.getCode(), ErrorCode.SYSTEM_ERROR.getMessage());
     }
 }
